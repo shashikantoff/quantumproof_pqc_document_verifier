@@ -1,0 +1,38 @@
+groups:
+  - name: quantumproof-availability
+    rules:
+      - alert: QuantumProofAPIDown
+        expr: up{job="quantumproof-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: QuantumProof API metrics endpoint is unavailable
+          description: Prometheus has not been able to scrape the API for one minute.
+
+      - alert: QuantumProofDatabaseUnavailable
+        expr: quantumproof_dependency_up{dependency="database"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: QuantumProof database is unavailable
+          description: The API readiness probe cannot reach PostgreSQL.
+
+      - alert: QuantumProofLedgerUnavailable
+        expr: quantumproof_dependency_up{dependency="ledger"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: QuantumProof ledger is unavailable
+          description: The API cannot read from its configured ledger backend.
+
+      - alert: QuantumProofHighServerErrorRate
+        expr: sum(rate(quantumproof_http_requests_total{status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: QuantumProof API is returning server errors
+          description: The API has exceeded 0.1 server errors per second for five minutes.

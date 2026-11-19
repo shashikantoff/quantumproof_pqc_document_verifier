@@ -1,0 +1,15 @@
+# Start this only after a Fabric network and enrolled gateway identity exist.
+services:
+  fabric-gateway:
+    build: ./gateway
+    env_file: ./gateway/.env
+    volumes:
+      - ./gateway/crypto:/fabric/crypto:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - fabric_test
+
+networks:
+  fabric_test:
+    external: true

@@ -1,0 +1,95 @@
+name: quantumproof-e2e
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    environment:
+      POSTGRES_DB: verifier
+      POSTGRES_USER: verifier
+      POSTGRES_PASSWORD: verifier
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U verifier -d verifier"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./backend
+      target: runtime
+    platform: linux/amd64
+    environment:
+      DATABASE_URL: postgresql+psycopg://verifier:verifier@db:5432/verifier
+      LEDGER_BACKEND: development
+      ALLOW_INSECURE_DEMO_PQC: "true"
+      KEYSTORE_PATH: /var/lib/pqc-keys
+      ADMIN_ID: e2e-admin
+      ADMIN_PASSWORD: e2e-only-password
+      ADMIN_COOKIE_SECURE: "false"
+      CORS_ORIGINS: http://web
+      PUBLIC_BASE_URL: http://web
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - e2e-pqc-keys:/var/lib/pqc-keys
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  web:
+    build: ./frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health/live >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  issuer-seed:
+    build:
+      context: ./backend
+      target: runtime
+    platform: linux/amd64
+    command: ["python", "-m", "app.provision_demo_issuer"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://verifier:verifier@db:5432/verifier
+      LEDGER_BACKEND: development
+      ALLOW_INSECURE_DEMO_PQC: "true"
+      KEYSTORE_PATH: /var/lib/pqc-keys
+      ADMIN_ID: e2e-admin
+      ADMIN_PASSWORD: e2e-only-password
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - e2e-pqc-keys:/var/lib/pqc-keys
+    restart: "no"
+
+  e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.e2e
+    environment:
+      E2E_BASE_URL: http://web
+      E2E_ADMIN_ID: e2e-admin
+      E2E_ADMIN_PASSWORD: e2e-only-password
+    depends_on:
+      web:
+        condition: service_healthy
+      issuer-seed:
+        condition: service_completed_successfully
+
+volumes:
+  e2e-pqc-keys:

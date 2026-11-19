@@ -1,0 +1,42 @@
+.env
+__pycache__/
+.pytest_cache/
+*.pyc
+*.backup
+node_modules/
+dist/
+coverage/
+frontend/.pnpm-store/
+frontend/test-results/
+frontend/playwright-report/
+secrets/
+issuer-keys/
+issuer-workspace/
+cookies.txt
+
+# Local dependency caches, downloaded upstream samples, and scratch work
+/.pnpm-store/
+/fabric-samples/
+/work/
+/.vscode/
+
+# Generated experiment and security outputs
+/experiment-results-*/
+/security-results/
+
+# Local backups and non-source submission artifacts
+/verifier_backup.sql
+/docker-compose.yml.backup
+/ieee-submission.zip
+/ieee-submission/
+/paper/
+/submission/
+/README2.md
+/PHASE3-APPLY.txt
+/imortant.txt
+
+fabric/gateway/.env
+
+fabric/gateway/crypto/*
+fabric/gateway/crypto/!README.md
+fabric/gateway/crypto.backup-old/
