@@ -55,13 +55,13 @@ RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY --chown=appuser:appuser migrations ./migrations
 COPY --chown=appuser:appuser alembic.ini ./alembic.ini
 
+FROM production-dependencies AS issuer-tools
+COPY --chown=appuser:appuser app ./app
+USER appuser
+ENTRYPOINT ["python", "-m", "app.issuer_tool"]
+
 FROM production-dependencies AS runtime
 COPY --chown=appuser:appuser app ./app
 USER appuser
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-FROM production-dependencies AS issuer-tools
-COPY --chown=appuser:appuser app ./app
-USER appuser
-ENTRYPOINT ["python", "-m", "app.issuer_tool"]
